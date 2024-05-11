@@ -1,50 +1,114 @@
 <template>
   <div id="app">
-    <div :class="['background', gender === 'male' ? 'bgMan' : 'bgWoman']">
-      <div class="container">
-        <div class="productBox">
-          <div class="gambar">
-            <img src="@/assets/ImgTest.png" class="fotoGambar" alt="gambar" />
+    <div
+      v-if="
+        currentProduct.category == 'jewelery' ||
+        currentProduct.category == 'electronics'
+      "
+    >
+      <div class="bgUnavailable">
+        <div class="container">
+          <div v-if="isLoading" class="productBox">
+            <div class="custom-loaderUnvavailable"></div>
           </div>
-
-          <div class="deskripsi">
-            <div :class="[gender === 'female' ? 'judulWoman' : 'judulMan']">
-              Lock and Love Women's Removable Hooded Faux Leather Moto Biker
-              Jacket
-            </div>
-            <div class="kategori">
-              <p style="color: #3f3f3f">Pakaian</p>
-              <div :class="[gender === 'female' ? 'ratingWoman' : 'ratingMan']">
-                <div class="nilai">2.4/5</div>
-                <div v-for="i in 5" :key="i" :class="circleClasses(i)"></div>
-              </div>
-            </div>
-            <div class="horizontal-line"></div>
-            <p style="margin-bottom: 35px">
-              Lorem ipsum dolor sit amet consectetur adipisicing elit. Ut sequi
-              reiciendis illum ipsum pariatur officiis amet cumque corporis modi
-              repellat. Mollitia ipsa veritatis cumque ea aspernatur, rem
-              voluptatem dignissimos accusantium.
-            </p>
-            <div class="horizontal-line"></div>
-            <div :class="[gender === 'female' ? 'hargaWoman' : 'hargaMan']">
-              $29.5
-            </div>
-            <div class="tombol">
-              <button
-                :class="[
-                  gender === 'female' ? 'tombolFillWoman' : 'tombolFillMan',
-                ]"
-              >
-                Buy Now
-              </button>
-              <button
-                :class="[
-                  gender === 'female' ? 'tombolBorderWoman' : 'tombolBorderMan',
-                ]"
-              >
+          <div v-else class="productBox">
+            <img
+              src="@/assets/sad-face.png"
+              style="margin-left: 55px"
+              alt="gambar"
+            />
+            <div class="unavailable">
+              <p style="text-align: center">
+                This product is unavailable to show
+              </p>
+              <button class="tombolUnvailable" @click="nextProduct">
                 Next Product
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div v-else>
+      <div
+        :class="[
+          'background',
+          category === `men's clothing` ? 'bgMan' : 'bgWoman',
+        ]"
+      >
+        <div class="container">
+          <div v-if="isLoading" class="productBox">
+            <div
+              :class="[
+                category === `men's clothing`
+                  ? 'custom-loaderMan'
+                  : 'custom-loaderWoman',
+              ]"
+            ></div>
+          </div>
+          <div class="productBox" v-else>
+            <div class="gambar">
+              <img
+                :src="currentProduct.image"
+                class="fotoGambar"
+                alt="gambar"
+              />
+            </div>
+
+            <div class="deskripsi">
+              <div
+                :class="[
+                  category === `women's clothing` ? 'judulWoman' : 'judulMan',
+                ]"
+              >
+                {{ currentProduct.title }}
+              </div>
+              <div class="kategori">
+                <p style="color: #3f3f3f">{{ currentProduct.category }}</p>
+                <div
+                  :class="[
+                    category === `women's clothing`
+                      ? 'ratingWoman'
+                      : 'ratingMan',
+                  ]"
+                >
+                  <div class="nilai">{{ currentProduct.rating.rate }}/5</div>
+                  <div v-for="i in 5" :key="i" :class="circleClasses(i)"></div>
+                </div>
+              </div>
+              <div class="horizontal-line"></div>
+              <p style="margin-bottom: 35px">
+                {{ currentProduct.description }}
+              </p>
+              <div class="horizontal-line"></div>
+              <div
+                :class="[
+                  category === `women's clothing` ? 'hargaWoman' : 'hargaMan',
+                ]"
+              >
+                ${{ currentProduct.price }}
+              </div>
+              <div class="tombol">
+                <button
+                  :class="[
+                    category === `women's clothing`
+                      ? 'tombolFillWoman'
+                      : 'tombolFillMan',
+                  ]"
+                >
+                  Buy Now
+                </button>
+                <button
+                  @click="nextProduct"
+                  :class="[
+                    category === `women's clothing`
+                      ? 'tombolBorderWoman'
+                      : 'tombolBorderMan',
+                  ]"
+                >
+                  Next Product
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -54,24 +118,72 @@
 </template>
 
 <script>
+import { getProducts } from "./API/request.js";
 export default {
   data() {
     return {
-      gender: "male",
-      productRating: 4,
+      currentIndex: 1,
+      isLoading: false,
+      currentProduct: {},
+      category: "",
     };
   },
   methods: {
     circleClasses(i) {
       return {
-        circleWoman: this.gender === "female",
-        circleMan: this.gender === "male",
-        filledWoman: this.gender === "female" && i <= this.productRating,
-        filledMan: this.gender === "male" && i <= this.productRating,
-        borderWoman: this.gender === "female",
-        borderMan: this.gender === "male",
+        circleWoman: this.category === "women's clothing",
+        circleMan: this.category === "men's clothing",
+        filledWoman:
+          this.category === "women's clothing" &&
+          i <= Math.round(this.currentProduct.rating.rate),
+        filledMan:
+          this.category === "men's clothing" &&
+          i <= Math.round(this.currentProduct.rating.rate),
+        borderWoman: this.category === "women's clothing",
+        borderMan: this.category === "men's clothing",
       };
     },
+
+    async fetchProduct() {
+      this.isLoading = true;
+      try {
+        const response = await fetch(getProducts(this.currentIndex));
+        const data = await response.json();
+
+        if (
+          data.category === "women's clothing" ||
+          data.category === "men's clothing"
+        ) {
+          this.category = data.category;
+        }
+        this.currentProduct = {
+          title: data.title,
+          price: data.price,
+          description:
+            data.description.length > 576
+              ? `${data.description.substring(0, 576)}...`
+              : data.description,
+          category: data.category,
+          image: data.image,
+          rating: {
+            rate: data.rating.rate,
+            count: data.rating.count,
+          },
+        };
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    nextProduct() {
+      this.currentIndex = this.currentIndex < 20 ? this.currentIndex + 1 : 1;
+      this.fetchProduct();
+    },
+  },
+  mounted() {
+    this.fetchProduct();
   },
 };
 </script>
@@ -86,6 +198,56 @@ body {
   padding: 0;
   height: 100vh;
 }
+.unavailable {
+  display: flex;
+  flex-direction: column;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
+}
+.custom-loaderMan {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: conic-gradient(#0000 10%, #002772);
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 16px), #000 0);
+  animation: s3 1s infinite linear;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+.custom-loaderUnvavailable {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: conic-gradient(#0000 10%, #d8d7d7);
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 16px), #000 0);
+  animation: s3 1s infinite linear;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+.custom-loaderWoman {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: conic-gradient(#0000 10%, #720060);
+  -webkit-mask: radial-gradient(farthest-side, #0000 calc(100% - 16px), #000 0);
+  animation: s3 1s infinite linear;
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@keyframes s3 {
+  to {
+    transform: rotate(1turn);
+  }
+}
 .background {
   height: 66vh;
   background-image: url("@/assets/bg-pattern.svg");
@@ -97,6 +259,10 @@ body {
 
 .bgMan {
   background-color: #d6e6ff;
+}
+.bgUnavailable {
+  height: 66vh;
+  background-color: #d8d7d7;
 }
 .container {
   display: flex;
@@ -120,6 +286,7 @@ body {
 }
 .fotoGambar {
   width: 250px;
+  height: 350px;
   margin-top: 50px;
   margin-left: 50px;
 }
@@ -234,6 +401,14 @@ body {
 .tombolBorderMan {
   color: #002772;
   border-color: #002772;
+}
+.tombolUnvailable {
+  height: 42px;
+  width: 465px;
+  background-color: white;
+  border-radius: 4px;
+  border: solid 3px black;
+  cursor: pointer;
 }
 #app {
 }
